@@ -773,4 +773,154 @@
         prevBtn.disabled = currentIndex === 0;
         if (currentIndex === totalQuestions - 1) {
             nextBtn.style.display = 'none';
-            finishBtn
+            finishBtn.style.display = 'inline-flex';
+        } else {
+            nextBtn.style.display = 'inline-flex';
+            finishBtn.style.display = 'none';
+        }
+
+        updateProgress();
+        updateHeaderScore();
+    }
+
+    function updateProgress() {
+        const answeredCount = userAnswers.filter(a => a !== null).length;
+        const pct = (answeredCount / totalQuestions) * 100;
+        progressFill.style.width = pct + '%';
+        progressText.textContent = Math.round(pct) + '%';
+    }
+
+    function updateHeaderScore() {
+        let correct = 0;
+        userAnswers.forEach((ans, idx) => {
+            if (ans !== null && ans === questions[idx].ans) correct++;
+        });
+        headerScore.textContent = `${correct} / ${totalQuestions}`;
+
+        // Color coding
+        headerScore.classList.remove('good', 'average', 'poor');
+        if (correct >= 32) headerScore.classList.add('good');
+        else if (correct >= 20) headerScore.classList.add('average');
+        else headerScore.classList.add('poor');
+    }
+
+    // ===================== NAVIGATION =====================
+    function nextQuestion() {
+        if (currentIndex < totalQuestions - 1) {
+            currentIndex++;
+            renderQuestion();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            renderQuestion();
+        }
+    }
+
+    // ===================== FINISH QUIZ =====================
+    function finishQuiz() {
+        quizFinished = true;
+        const answeredCount = userAnswers.filter(a => a !== null).length;
+        const unanswered = totalQuestions - answeredCount;
+
+        // If unanswered, confirm
+        if (unanswered > 0 && !confirm(`ನೀವು ${unanswered} ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಿಲ್ಲ. ನಿಜವಾಗಿಯೂ ಮುಗಿಸಬೇಕೇ?`)) {
+            return;
+        }
+
+        // Calculate score
+        let correct = 0;
+        let wrong = 0;
+        userAnswers.forEach((ans, idx) => {
+            if (ans === null) return;
+            if (ans === questions[idx].ans) correct++;
+            else wrong++;
+        });
+
+        // Show result screen
+        quizArea.style.display = 'none';
+        navBar.style.display = 'none';
+        resultScreen.classList.add('show');
+
+        // Student name
+        const name = studentNameInput.value.trim() || 'ವಿದ್ಯಾರ್ಥಿ';
+        document.getElementById('resultName').textContent = `ವಿದ್ಯಾರ್ಥಿ: ${name}`;
+
+        // Score display
+        document.getElementById('resultScoreBig').innerHTML = `${correct}<span class="total"> / ${totalQuestions}</span>`;
+        document.getElementById('statCorrect').textContent = correct;
+        document.getElementById('statWrong').textContent = wrong;
+        document.getElementById('statUnanswered').textContent = unanswered;
+
+        // Message and icon
+        const icon = document.getElementById('resultIcon');
+        const msg = document.getElementById('resultMessage');
+        msg.classList.remove('good', 'average', 'poor');
+
+        if (correct >= 32) {
+            icon.textContent = '🌟';
+            msg.textContent = 'ಅದ್ಭುತ! ನೀವು ತುಂಬಾ ಚೆನ್ನಾಗಿ ಮಾಡಿದ್ದೀರಿ!';
+            msg.classList.add('good');
+        } else if (correct >= 20) {
+            icon.textContent = '👍';
+            msg.textContent = 'ಒಳ್ಳೆಯ ಪ್ರಯತ್ನ! ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸ ಮಾಡಿ.';
+            msg.classList.add('average');
+        } else {
+            icon.textContent = '📚';
+            msg.textContent = 'ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸ ಅಗತ್ಯವಿದೆ. ಪ್ರಯತ್ನಿಸುತ್ತಿರಿ!';
+            msg.classList.add('poor');
+        }
+
+        // Review list
+        const reviewList = document.getElementById('reviewList');
+        reviewList.innerHTML = '';
+        questions.forEach((q, idx) => {
+            const userAns = userAnswers[idx];
+            const isCorrect = userAns === q.ans;
+            const div = document.createElement('div');
+            div.className = `review-item ${isCorrect ? 'correct' : ''}`;
+
+            let ansHtml = '';
+            if (userAns === null) {
+                ansHtml = `<span class="r-your">ಉತ್ತರಿಸಿಲ್ಲ</span> — <span class="r-ans">ಸರಿ: ${q.options[q.ans]}</span>`;
+            } else if (isCorrect) {
+                ansHtml = `<span class="r-ans">${q.options[q.ans]}</span>`;
+            } else {
+                ansHtml = `<span class="r-your">${q.options[userAns]}</span> — <span class="r-ans">ಸರಿ: ${q.options[q.ans]}</span>`;
+            }
+
+            div.innerHTML = `
+                <span class="r-num">${idx + 1}.</span>
+                <span class="r-text">${q.q}</span>
+                <span>${ansHtml}</span>
+            `;
+            reviewList.appendChild(div);
+        });
+    }
+
+    // ===================== RESTART =====================
+    function restartQuiz() {
+        currentIndex = 0;
+        userAnswers = new Array(totalQuestions).fill(null);
+        quizFinished = false;
+
+        // Show quiz area
+        quizArea.style.display = 'flex';
+        navBar.style.display = 'flex';
+        resultScreen.classList.remove('show');
+
+        // Reset header score
+        headerScore.textContent = '0 / 40';
+        headerScore.classList.remove('good', 'average', 'poor');
+
+        renderQuestion();
+    }
+
+    // ===================== INIT =====================
+    renderQuestion();
+</script>
+
+</body>
+</html>
